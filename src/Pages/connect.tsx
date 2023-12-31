@@ -199,7 +199,7 @@ export default function ConnectWallet() {
             value: ethers.parseUnits("0.01", "ether").toString(),
         };
 
-        const relayKit = new GelatoRelayPack({ apiKey: "mlRmRC3nFmDl_qMnKwuTQk91eE2uOafpll08Jnt_OFA_", protocolKit })
+        const relayKit = new GelatoRelayPack({ apiKey: "Api_key", protocolKit })
 
         const safeTransaction = await relayKit.createRelayedTransaction({
             transactions: [safeSponsoredTransactionData],
