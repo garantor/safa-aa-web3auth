@@ -6,6 +6,7 @@
     "@chakra-ui/react": "^2.8.2",
     "@emotion/react": "^11.11.3",
     "@emotion/styled": "^11.11.0",
+    "@safe-global/auth-kit": "^2.0.0",
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^14.5.2",
@@ -22,10 +23,11 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "build": "react-app-rewired build",
+    "eject": "react-scripts eject",
+    "lint": "react-scripts lint",
+    "start": "react-app-rewired start",
+    "test": "react-app-rewired test"
   },
   "eslintConfig": {
     "extends": "react-app"
@@ -41,5 +43,20 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  }
+  },
+    "devDependencies": {
+      "assert": "^2.0.0",
+      "buffer": "^6.0.3",
+      "crypto-browserify": "^3.12.0",
+      "eslint-config-react-app": "^7.0.1",
+      "https-browserify": "^1.0.0",
+      "os-browserify": "^0.3.0",
+      "process": "^0.11.10",
+      "react-app-rewired": "^2.2.1",
+      "source-map-loader": "^4.0.1",
+      "stream-browserify": "^3.0.0",
+      "stream-http": "^3.2.0",
+      "url": "^0.11.0",
+      "zlib-browserify": "^0.0.3"
+    }
 }
