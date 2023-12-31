@@ -1,13 +1,13 @@
 import React, { useContext, useEffect, useState } from "react";
-import { SafeAuthPack, SafeAuthConfig, SafeAuthInitOptions } from "@safe-global/auth-kit";
+import { SafeAuthPack, SafeAuthConfig, SafeAuthInitOptions, SafeAuthSignInOptions } from "@safe-global/auth-kit";
 import { ethers, BrowserProvider, Eip1193Provider } from "ethers";
 import Safe, { EthersAdapter, SafeFactory } from "@safe-global/protocol-kit";
 import CustomAlert from "../Components/customAlert";
 import { AppContext } from "../Context";
 import { Box, Button, Center, Flex, Spacer, useColorModeValue } from "@chakra-ui/react";
 import { ColorModeSwitcher } from "../ColorModeSwitcher";
-import { MetaTransactionData } from '@safe-global/safe-core-sdk-types'
-
+import { MetaTransactionData, MetaTransactionOptions } from '@safe-global/safe-core-sdk-types'
+import { GelatoRelayPack } from '@safe-global/relay-kit'
 
 const loadingNFTs = {
     isSuccessful: false,
@@ -77,7 +77,10 @@ export default function ConnectWallet() {
     async function web3AuthConnect() {
         setLoading(true)
         console.log("got inside ")
-        const signin = await safeAuthInstance.signIn();
+        const sOption : SafeAuthSignInOptions = {
+            loginProvider:"google"
+        }
+        const signin = await safeAuthInstance.signIn(sOption);
         console.log("this is the value of sign in ", signin)
         context.setUserPublicKey(signin?.eoa)
         setSafeAddress(signin?.safes[0] || "0x")
@@ -154,7 +157,7 @@ export default function ConnectWallet() {
         const safeTransactionData: MetaTransactionData = {
             to: ethers.getAddress(context.userPublicKey),
             data: "0x",
-            value: ethers.parseUnits("0.0001", "ether").toString(),
+            value: ethers.parseUnits("0.0047", "ether").toString(),
         };
 
         const safeTransaction = await protocolKit.createTransaction({
@@ -168,6 +171,46 @@ export default function ConnectWallet() {
         const txResult = await protocolKit.executeTransaction(tx);
         console.log("this is the transaction response: ", txResult)
         
+    }
+
+
+    async function sendSponsoredTransaction() {
+        const provider = new BrowserProvider(safeAuthPack?.getProvider() as Eip1193Provider);
+        const options : MetaTransactionOptions = {
+            isSponsored: true
+        }
+
+        const signer = await provider.getSigner();
+
+        const ethAdapter = new EthersAdapter({
+            ethers,
+            signerOrProvider: signer
+        })
+
+        const protocolKit = await Safe.create({
+            ethAdapter,
+            safeAddress
+        })
+
+        
+        const safeSponsoredTransactionData: MetaTransactionData = {
+            to: ethers.getAddress(context.userPublicKey),
+            data: "0x",
+            value: ethers.parseUnits("0.01", "ether").toString(),
+        };
+
+        const relayKit = new GelatoRelayPack({ apiKey: "mlRmRC3nFmDl_qMnKwuTQk91eE2uOafpll08Jnt_OFA_", protocolKit })
+
+        const safeTransaction = await relayKit.createRelayedTransaction({
+            transactions: [safeSponsoredTransactionData],
+            options
+        })
+
+        const signedSafeTransaction = await protocolKit.signTransaction(safeTransaction)
+
+        const response = await relayKit.executeRelayTransaction(signedSafeTransaction, options)
+
+        console.log(`Relay Transaction Task ID: https://relay.gelato.digital/tasks/status/${response.taskId}`)
     }
 
 
@@ -191,6 +234,7 @@ export default function ConnectWallet() {
                 <>
                     <Button bg="green" onClick={createSafe} marginRight={5}> Create Safe </Button>
                     <Button bg="green" onClick={sendBasicSafeTx} marginRight={5}> Send Basic Tx </Button>
+                    <Button bg="green" onClick={sendSponsoredTransaction} marginRight={5}> Send Sponsored Transaction </Button>
                 
                 </>
     
