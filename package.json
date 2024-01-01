@@ -30,7 +30,12 @@
     "@web3auth/modal": "^7.3.0",
     "@web3auth/openlogin-adapter": "^7.2.1",
     "ethers": "^6.9.1",
+    "expo-auth-session": "^5.2.0",
+    "expo-crypto": "^12.6.0",
     "framer-motion": "^6.5.1",
+    "google-auth-library": "^9.4.1",
+    "jsonwebtoken": "^9.0.2",
+    "jwt-decode": "^4.0.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-icons": "^3.11.0",
@@ -61,6 +66,7 @@
     ]
   },
   "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.5",
     "assert": "^2.0.0",
     "buffer": "^6.0.3",
     "crypto-browserify": "^3.12.0",

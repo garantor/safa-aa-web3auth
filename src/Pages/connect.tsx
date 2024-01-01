@@ -20,6 +20,13 @@ import { EthereumPrivateKeyProvider } from "@web3auth/ethereum-provider";
 import ShareTransferModule from "@tkey/share-transfer";
 
 import { GoogleLogin, useGoogleLogin } from '@react-oauth/google';
+import { SfaServiceProvider } from "@tkey/service-provider-sfa";
+import { jwtDecode } from "jwt-decode";
+
+
+
+
+console.log(process.env.REACT_APP_CLIENT_ID)
 
 
 const loadingNFTs = {
@@ -31,8 +38,15 @@ const loadingNFTs = {
 };
 
 
+// const oAuth2Client = new OAuth2Client(
+//     "213296331271-r8g8mb5kdo3fc7p0v3vbf7c0c0c7kscn.apps.googleusercontent.com",
+//     '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',
+//     'postmessage',
+// );
 
-const clientId = "BAYpz00A409jl1IJrRCVwbcg18UIG1G7DyGb5T8wmWbsRnWaM05DJsqx0lPqrBso8GT5l4Kw9w7dl7SDsgWxVo0"; // get from https://dashboard.web3auth.io
+
+const clientId = process.env.REACT_APP_CLIENT_ID 
+// get from https://dashboard.web3auth.io
 
 const chainConfig = {
     chainId: "0x1",
@@ -58,16 +72,16 @@ const storageLayer = new TorusStorageLayer({ hostUrl: "https://metadata.tor.us" 
 
 const webStorageModule = new WebStorageModule();
 // const chromeStorageModule = new ChromeExtensionStorageModule();
-const shareTransferModule = new ShareTransferModule();
+// const shareTransferModule = new ShareTransferModule();
 
 
 const tKeyInstance = new ThresholdKey({
     serviceProvider,
     storageLayer,
     modules: {
-        webStorageModule,
+        webStorage:webStorageModule,
         // chromeStorageModule,
-        shareTransferModule,
+        // shareTransferModule,
     },
 });
 
@@ -88,6 +102,9 @@ export default function ConnectWallet() {
     const [disableBtn, setDisableBtn] = useState(context.isInitialized)
     const [loading, setLoading] = useState(false)
     const [safeAddress, setSafeAddress] = useState<any>()
+    const [googleAccessToken, setGoogleAccessToken] = useState<any>()
+    const [googleUserInfo, setGoogleUserInfo] = useState<any>()
+    const [userInfoTKey, setUserInfoTKey] = useState<any>()
 
 
     useEffect(() => {
@@ -105,10 +122,35 @@ export default function ConnectWallet() {
     
     
 
+    const getUserInfo = async () => {
+        console.log("getting user details ")
+        console.log(googleAccessToken)
+        if (!googleAccessToken) return;
+        try {
+            const response = await fetch(
+                "https://www.googleapis.com/oauth2/v3/userinfo",
+                {
+                    headers: { Authorization: `Bearer ${googleAccessToken}` },
+                }
+            );
 
-    const login = useGoogleLogin({
-        onSuccess: tokenResponse => console.log("this is google reple; ",tokenResponse),
-    });
+            const user = await response.json();
+            console.log("this is he user info ", user)
+            // await AsyncStorage.setItem("@user", JSON.stringify(user));
+            setGoogleUserInfo(user);
+            return user
+        } catch (error) {
+            console.log("This inside error ", error)
+            // Add your own error handler here
+        }
+    };
+
+    function login(){
+        
+
+    }
+
+
 
 
 
@@ -118,25 +160,49 @@ export default function ConnectWallet() {
     
 
 
-async function loginWithGoogle() {
+async function connectToWeb3Auth() {
+    console.log("this firts", googleAccessToken)
+    // const userDetails = await getUserInfo()
+    const token:any = googleAccessToken
+    const decodeAccess:any = jwtDecode(token)
+    console.log(decodeAccess)
+    // console.log(decodeAccess.email)
+   
+
+
     // safe-auth-webApp
     
-    // try {
-    //     const OAuthShareKey = await tKeyInstance.serviceProvider.connect({
-    //         verifier: "google-with-devnet", //verifier identifier from the web3auth network dashboard
-    //         verifierId: "saafolabi1@gmail.com",
-    //         idToken: response.authentication.idToken,
-    //     });
-    //     console.log("this is the OAuthShare ", OAuthShareKey);
-    //     let intize = await tKeyInstance.initialize();
-    //     console.log(intize);
-    //     let details = tKeyInstance.getKeyDetails();
-    //     setUserInfoTKey(details)
+    try {
+        const OAuthShareKey = await( tKeyInstance.serviceProvider as SfaServiceProvider).connect({
+            verifier: "safe-auth-webApp", //verifier identifier from the web3auth network dashboard
+            verifierId: decodeAccess.email,
+            idToken: googleAccessToken,
+        });
+        console.log("this is the OAuthShare ", OAuthShareKey);
+        let intize = await tKeyInstance.initialize();
+        console.log(intize);
+        let details = tKeyInstance.getKeyDetails();
+        setUserInfoTKey(details)
+        console.log(details)
 
-    // } catch (error) {
-    //     console.log("this is the error ", error)
+    } catch (error) {
+        console.log("this is the error ", error)
 
-    // }
+    }
+    
+}
+
+
+async function reconstructPrivateKey(){
+    
+    const share = await (tKeyInstance.modules.webStorage as WebStorageModule).getDeviceShare();
+    console.log("the web share ", share)
+    await tKeyInstance.inputShareStoreSafe(share)
+    let pKey = await tKeyInstance.reconstructKey()
+    const keyDec = pKey.privKey.toString("hex");
+    console.log("this is the private key instance ", pKey)
+    console.log("this is the private key instance ", keyDec)
+
     
 }
 
@@ -297,16 +363,28 @@ async function loginWithGoogle() {
             margin={2}
   
         >
-
-
             <GoogleLogin
                 onSuccess={credentialResponse => {
                     console.log(credentialResponse);
+                    setGoogleAccessToken(credentialResponse.credential)
                 }}
                 onError={() => {
                     console.log('Login Failed');
                 }}
             />
+
+
+
+
+
+            <Button bg="green" onClick={reconstructPrivateKey} isDisabled={disableBtn}> Reconstruct Key </Button>
+
+
+            <Button bg="green" onClick={connectToWeb3Auth} isDisabled={disableBtn}> Connect to Web3Auth </Button>
+
+
+
+  
             <Spacer />
             {context.isConnected === true ? (
                 <>

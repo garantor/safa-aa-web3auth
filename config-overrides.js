@@ -11,6 +11,7 @@ module.exports = function override(config) {
     os: false,
     url: false,
     zlib: false,
+    
   });
   config.resolve.fallback = fallback;
   config.plugins = (config.plugins || []).concat([

@@ -13,9 +13,12 @@ import { ColorModeSwitcher } from "./ColorModeSwitcher"
 import ConnectWallet from "./Pages/connect"
 import AppContextProvider from "./Context"
 import { GoogleOAuthProvider } from '@react-oauth/google';
+
+
+console.log("this is the value ; ",process.env.REACT_APP_GOOGLE_ID as string)
 export const App = () => (
   <ChakraProvider theme={theme}>
-    <GoogleOAuthProvider clientId="213296331271-r8g8mb5kdo3fc7p0v3vbf7c0c0c7kscn.apps.googleusercontent.com">
+    <GoogleOAuthProvider clientId={process.env.REACT_APP_GOOGLE_ID as string}>
       <AppContextProvider>
         <Box textAlign="center" fontSize="xl">
           <ConnectWallet />
