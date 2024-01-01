@@ -25,10 +25,6 @@ import { jwtDecode } from "jwt-decode";
 
 
 
-
-console.log(process.env.REACT_APP_CLIENT_ID)
-
-
 const loadingNFTs = {
     isSuccessful: false,
     header: "Loading  ....",
@@ -38,11 +34,7 @@ const loadingNFTs = {
 };
 
 
-// const oAuth2Client = new OAuth2Client(
-//     "213296331271-r8g8mb5kdo3fc7p0v3vbf7c0c0c7kscn.apps.googleusercontent.com",
-//     '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',
-//     'postmessage',
-// );
+
 
 
 const clientId = process.env.REACT_APP_CLIENT_ID 
