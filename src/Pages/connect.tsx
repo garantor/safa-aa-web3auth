@@ -9,6 +9,19 @@ import { ColorModeSwitcher } from "../ColorModeSwitcher";
 import { MetaTransactionData, MetaTransactionOptions } from '@safe-global/safe-core-sdk-types'
 import { GelatoRelayPack } from '@safe-global/relay-kit'
 
+import ThresholdKey from "@tkey/core";
+import SecurityQuestionsModule from "@tkey/security-questions";
+import SFAServiceProvider from "@tkey/service-provider-sfa";
+import TorusStorageLayer from "@tkey/storage-layer-torus";
+import { ShareSerializationModule } from "@tkey/share-serialization";
+import { WebStorageModule } from "@tkey/web-storage";
+// import { ChromeExtensionStorageModule } from "@tkey/chrome-storage";
+import { EthereumPrivateKeyProvider } from "@web3auth/ethereum-provider";
+import ShareTransferModule from "@tkey/share-transfer";
+
+import { GoogleLogin, useGoogleLogin } from '@react-oauth/google';
+
+
 const loadingNFTs = {
     isSuccessful: false,
     header: "Loading  ....",
@@ -18,6 +31,56 @@ const loadingNFTs = {
 };
 
 
+
+const clientId = "BAYpz00A409jl1IJrRCVwbcg18UIG1G7DyGb5T8wmWbsRnWaM05DJsqx0lPqrBso8GT5l4Kw9w7dl7SDsgWxVo0"; // get from https://dashboard.web3auth.io
+
+const chainConfig = {
+    chainId: "0x1",
+    rpcTarget: "https://rpc.ankr.com/eth",
+    displayName: "mainnet",
+    blockExplorer: "https://etherscan.io/",
+    ticker: "ETH",
+    tickerName: "Ethereum",
+};
+
+const web3AuthOptions: any = {
+    clientId, // Get your Client ID from the Web3Auth Dashboard
+    chainConfig,
+    web3AuthNetwork: "sapphire_devnet", // ["sapphire_mainnet", "sapphire_devnet"]
+};
+
+// Configuration of Service Provider
+const serviceProvider = new SFAServiceProvider({ web3AuthOptions });
+
+
+
+const storageLayer = new TorusStorageLayer({ hostUrl: "https://metadata.tor.us" });
+
+const webStorageModule = new WebStorageModule();
+// const chromeStorageModule = new ChromeExtensionStorageModule();
+const shareTransferModule = new ShareTransferModule();
+
+
+const tKeyInstance = new ThresholdKey({
+    serviceProvider,
+    storageLayer,
+    modules: {
+        webStorageModule,
+        // chromeStorageModule,
+        shareTransferModule,
+    },
+});
+
+
+
+
+export const ethereumPrivateKeyProvider = new EthereumPrivateKeyProvider({
+    config: {
+        chainConfig,
+    },
+});
+
+
 export default function ConnectWallet() {
     const [safeAuthInstance, setSafeAuthInstance] = useState<any>()
     const context = useContext(AppContext)
@@ -25,52 +88,57 @@ export default function ConnectWallet() {
     const [disableBtn, setDisableBtn] = useState(context.isInitialized)
     const [loading, setLoading] = useState(false)
     const [safeAddress, setSafeAddress] = useState<any>()
-    const [provider, setProvider] = useState<any>()
-    const [signerInstance, setSignerInstance] = useState<any>()
-
-
 
 
     useEffect(() => {
-        console.log("this is initialized ")
-        setLoading(true)
+        const init = async () => {
+            // Initialization of Service Provider
+            try {
+                await (tKeyInstance.serviceProvider as any).init(ethereumPrivateKeyProvider);
+                console.log("initialted successfully")
+            } catch (error) {
+                console.error(error);
+            }
+        };
+        init();
+    }, []);
+    
+    
 
-        const initializeSafeAuth = async () => {
-            const safeAuthInitOptions: SafeAuthInitOptions = {
-                showWidgetButton: false, // Set to true to show the SafeAuth widget button
-                chainConfig: {
-                    blockExplorerUrl: "https://etherscan.io", // The block explorer URL
-                    chainId: "0x5", // The chain ID
-                    displayName: "Ethereum Goerli", // The chain name
-                    rpcTarget: "https://rpc.ankr.com/eth_goerli", // The RPC target
-                    ticker: "ETH", // The chain ticker
-                    tickerName: "Ethereum", // The chain ticker name
-                },
-            };
 
-            const safeAuthPack = new SafeAuthPack();
-            await safeAuthPack.init(safeAuthInitOptions);
-            setSafeAuthInstance(safeAuthPack)
-            context.setIsInitialized(true)
-            context.setSafeAuthInstance(safeAuthPack)
-            setLoading(false)
-
-        }
-
-        initializeSafeAuth();
-    }, [])
+    const login = useGoogleLogin({
+        onSuccess: tokenResponse => console.log("this is google reple; ",tokenResponse),
+    });
 
 
 
-    useEffect(() => {
-        console.log("this is the status ", disableBtn)
-        setDisableBtn(!disableBtn)
-
-
-    }, [context.isInitialized])
 
 
 
+    
+
+
+async function loginWithGoogle() {
+    // safe-auth-webApp
+    
+    // try {
+    //     const OAuthShareKey = await tKeyInstance.serviceProvider.connect({
+    //         verifier: "google-with-devnet", //verifier identifier from the web3auth network dashboard
+    //         verifierId: "saafolabi1@gmail.com",
+    //         idToken: response.authentication.idToken,
+    //     });
+    //     console.log("this is the OAuthShare ", OAuthShareKey);
+    //     let intize = await tKeyInstance.initialize();
+    //     console.log(intize);
+    //     let details = tKeyInstance.getKeyDetails();
+    //     setUserInfoTKey(details)
+
+    // } catch (error) {
+    //     console.log("this is the error ", error)
+
+    // }
+    
+}
 
 
 
@@ -229,6 +297,16 @@ export default function ConnectWallet() {
             margin={2}
   
         >
+
+
+            <GoogleLogin
+                onSuccess={credentialResponse => {
+                    console.log(credentialResponse);
+                }}
+                onError={() => {
+                    console.log('Login Failed');
+                }}
+            />
             <Spacer />
             {context.isConnected === true ? (
                 <>
@@ -241,13 +319,16 @@ export default function ConnectWallet() {
             ): null}
 
 
-            <Button bg="green" onClick={btnLabel === "Login" ? web3AuthConnect : web3AuthLogout} isDisabled={disableBtn}> {btnLabel} </Button>
+            <Button bg="green" onClick={btnLabel === "Login" ? () => login() : web3AuthLogout} isDisabled={disableBtn}> {btnLabel} </Button>
             <Center>
                 <ColorModeSwitcher />
 
             </Center>
 
             {loading === true ? (
+                <>
+                
+               
                 <CustomAlert
                     isSuccessful={loadingNFTs.isSuccessful}
                     header={loadingNFTs.header}
@@ -257,6 +338,8 @@ export default function ConnectWallet() {
                     onCloseDialog={() => ({})}
                     isClosable={false}
                 />
+                </>
+
             ) : null}
 
         </Flex>
